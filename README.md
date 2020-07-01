@@ -1,3 +1,3 @@
-subrack
-=======
-README text here.
+# subrack
+
+Subset of Racket for fun.

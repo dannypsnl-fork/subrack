@@ -38,7 +38,7 @@
         ;;; application
         (e0 e1 ...)))
 
-(define-pass elim-complex-let : SubRack (ir) -> SubRack ()
+(define-pass elim-let* : SubRack (ir) -> SubRack ()
   (definitions)
   (Expr : Expr (ir) -> Expr ()
         [(let* () ,body* ... ,body)
@@ -47,11 +47,8 @@
          `(let ([,var ,e]) ,body* ... ,body)]
         [(let* ([,var ,e] [,var* ,e*] ...) ,body* ... ,body)
          `(let ([,var ,e])
-            ,(elim-complex-let
-              `(let* ([,var* ,e*] ...) ,body* ... ,body)))]
-        ;;; TODO: fix letrec with correct transformation
-        [(letrec ([,var* ,e*] ...) ,body* ... ,body)
-         `(let ([,var* ,e*] ...) ,body* ... ,body)])
+            ,(elim-let*
+              `(let* ([,var* ,e*] ...) ,body* ... ,body)))])
   (Expr ir))
 
 (define-language L1
@@ -59,13 +56,31 @@
   (Expr (e body)
         (- (let* ([var* e*] ...) body* ... body)
            (letrec ([var* e*] ...) body* ... body))))
+(define-pass elim-letrec : SubRack (ir) -> L1 ()
+  (definitions)
+  (Expr : Expr (ir) -> Expr ()
+        [(letrec ([,var* ,e*] ...) ,body* ... ,body)
+         `(let ([,var* ',var*] ...)
+            (set! ,var* ,e*) ...
+            ,body* ... ,body)])
+  (Expr ir))
+
+(define-pass final-pass : SubRack (ir) -> L1 ()
+  (definitions)
+  (Expr : Expr (ir) -> Expr ()
+        [else (elim-letrec
+               (elim-let* ir))])
+  (Expr ir))
 
 (module+ test
   (define-parser parse-SubRack SubRack)
-  (elim-complex-let (parse-SubRack `(let* () 1)))
+  (final-pass (parse-SubRack `(let* () 1)))
   ; (language:L1 '(let () 1))
-  (elim-complex-let (parse-SubRack `(let* ([x 1]) x)))
+  (final-pass (parse-SubRack `(let* ([x 1]) x)))
   ; (language:L1 '(let ((x 1)) x))
-  (elim-complex-let (parse-SubRack `(let* ([x 1] [y x] [z y] [j z]) y)))
+  (final-pass (parse-SubRack `(let* ([x 1] [y x] [z y] [j z]) y)))
   ; (language:L1 '(let ((x 1)) (let ((y x) (z y)) y)))
+  (final-pass (parse-SubRack `(letrec ([x y]
+                                       [y x]) 1)))
+  ; (language:L1 '(let ((x 'x) (y 'y)) (set! x y) (set! y x) 1))
   )

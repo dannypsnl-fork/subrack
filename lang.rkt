@@ -65,22 +65,42 @@
             ,body* ... ,body)])
   (Expr ir))
 
-(define-pass final-pass : SubRack (ir) -> L1 ()
+(define-pass elim-let : L1 (ir) -> L1 ()
   (definitions)
   (Expr : Expr (ir) -> Expr ()
-        [else (elim-letrec
-               (elim-let* ir))])
+        [(let ([,var* ,e*] ...) ,body* ... ,body)
+         `((λ (,var* ...)
+             ,(map elim-let body*) ... ,(elim-let body))
+           ,e* ...)])
   (Expr ir))
+(define-language L2
+  (extends L1)
+  (Expr (e body)
+        (- (let ([var* e*] ...) body* ... body))))
+(define-pass L1->L2 : L1 (ir) -> L2 ()
+  (definitions)
+  (Expr : Expr (ir) -> Expr ())
+  (Expr ir))
+
+(define (final-pass ir)
+  (L1->L2
+   (elim-let
+    (elim-letrec
+     (elim-let* ir)))))
 
 (module+ test
   (define-parser parse-SubRack SubRack)
   (final-pass (parse-SubRack `(let* () 1)))
   ; (language:L1 '(let () 1))
+  ; (language:L2 '((λ () 1)))
   (final-pass (parse-SubRack `(let* ([x 1]) x)))
   ; (language:L1 '(let ((x 1)) x))
+  ; (language:L2 '((λ (x) x) 1))
   (final-pass (parse-SubRack `(let* ([x 1] [y x] [z y] [j z]) y)))
   ; (language:L1 '(let ((x 1)) (let ((y x) (z y)) y)))
+  ; (language:L2 '((λ (x) ((λ (y) ((λ (z) ((λ (j) y) z)) y)) x)) 1))
   (final-pass (parse-SubRack `(letrec ([x y]
                                        [y x]) 1)))
   ; (language:L1 '(let ((x 'x) (y 'y)) (set! x y) (set! y x) 1))
+  ; (language:L2 '((λ (x y) (set! x y) (set! y x) 1) 'x 'y))
   )

@@ -30,6 +30,9 @@
         (let ([var* e*] ...) body* ... body)
         (let* ([var* e*] ...) body* ... body)
         (letrec ([var* e*] ...) body* ... body)
+        ;;; define/set!
+        (define var e*)
+        (set! var e*)
         ;;; lambda
         (λ (var* ...) body* ... body)
         ;;; application

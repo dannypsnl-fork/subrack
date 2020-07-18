@@ -1,5 +1,7 @@
 #lang nanopass
 
+(provide eval)
+
 (module+ test
   (require rackunit))
 
@@ -87,6 +89,10 @@
    (elim-let
     (elim-letrec
      (elim-let* ir)))))
+
+(define (eval ir)
+  (nanopass-case (L2 Expr) ir
+    [else ir]))
 
 (module+ test
   (define-parser parse-SubRack SubRack)

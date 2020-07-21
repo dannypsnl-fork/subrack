@@ -92,8 +92,7 @@
 
 (define (eval ir)
   (let ([e (final-pass ir)])
-    (nanopass-case (L2 Expr) e
-                   [else ir])))
+    e))
 
 (module+ test
   (define-parser parse-SubRack SubRack)

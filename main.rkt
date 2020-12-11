@@ -15,7 +15,10 @@
          `(let ([,var ,e])
             ,(elim-let*
               `(let* ([,var* ,e*] ...) ,body* ... ,body)))])
-  (Expr ir))
+  (let ([x (Expr ir)])
+    (printf "elim-let* ~a\n" ir)
+    (printf "elim-let* ~a\n" x)
+    x))
 (define-pass elim-letrec : SubRack (ir) -> L1 ()
   (definitions)
   (Expr : Expr (ir) -> Expr ()
@@ -23,7 +26,10 @@
          `(let ([,var* ',var*] ...)
             (set! ,var* ,e*) ...
             ,body* ... ,body)])
-  (Expr ir))
+  (let ([x (Expr ir)])
+    (printf "elim-letrec ~a\n" ir)
+    (printf "elim-letrec ~a\n" x)
+    x))
 
 (define-pass elim-let : L1 (ir) -> L1 ()
   (definitions)
@@ -40,9 +46,9 @@
 
 (define (final-pass ir)
   (L1->L2
-    (elim-let
-     (elim-letrec
-      (elim-let* ir)))))
+   (elim-let
+    (elim-letrec
+     (elim-let* ir)))))
 
 (define-parser parse-SubRack SubRack)
 (final-pass (parse-SubRack `(let* () 1)))

@@ -13,14 +13,12 @@
 (define-language SubRack
   (terminals
    (variable (var))
-   (primitive (primitive))
    (datum (d))
-   (constant (constant)))
+   (constant (c)))
   (Expr (e body)
         var
-        primitive
         'd
-        constant
+        c
         ;;; forms
         ;;; if
         (if e0 e1) ; auto void e2
@@ -29,9 +27,6 @@
         (let ([var* e*] ...) body* ... body)
         (let* ([var* e*] ...) body* ... body)
         (letrec ([var* e*] ...) body* ... body)
-        ;;; define/set!
-        (define var e*)
-        (set! var e*)
         ;;; lambda
         (λ (var* ...) body* ... body)
         ;;; application
@@ -46,4 +41,5 @@
 (define-language L2
   (extends L1)
   (Expr (e body)
-        (- (let ([var* e*] ...) body* ... body))))
+        (- (let ([var* e*] ...) body* ... body))
+        (+ (begin body* ... body))))
